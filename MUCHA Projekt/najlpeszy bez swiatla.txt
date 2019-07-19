@@ -1,0 +1,784 @@
+#define GLUT_DISABLE_ATEXIT_HACK
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
+//#include <GL/GLee.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <ctime>
+#include <malloc.h>
+#include <math.h>
+#include <GL/freeglut.h>
+#include "Targa.h"
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+
+GLbyte  EnableLight = true;
+GLuint listid;
+
+int screenWidth = 1200;
+int screenHeight = 600;
+
+int kolo=0;
+
+GLdouble cameraPos[] = {0.0, 0.0, 25.0};
+
+int i=0;
+
+GLfloat xRotated, yRotated, zRotated=0;
+
+GLuint tex[4];
+//z +- 5 granica
+//x +- 5 granica
+//y +- 5 granica
+
+
+GLfloat B[3][3] = {
+                    {0,0,0},   // V1
+                    {0,0,0},   // V2
+                    {0,0,0}
+                  }; // V3
+
+
+GLfloat C[3][3] = {
+                    {0,0,0},   // V1
+                    {0,0,0},   // V2
+                    {0,0,0}
+                  }; // V3
+
+GLfloat D[3][3] = {
+                    {0, 0, 0},   // V1
+                    {0, 0, 0},   // V2
+                    {0, 0, 0}
+                  }; // V3
+
+GLfloat E[3][3] = {
+                    {0, 0, 0},   // V1
+                    {0, 0, 0},   // V2
+                    {0, 0, 0}
+                  }; // V3
+
+GLfloat F[3][3] = {
+                    {0, 0, 0},   // V1
+                    {0, 0, 0},   // V2
+                    {0, 0, 0}
+                  }; // V3
+
+GLfloat G[3][3] = {
+                    {0, 0, 0},   // V1
+                    {0, 0, 0},   // V2
+                    {0, 0, 0}
+                  }; // V3
+
+bool k1 = true;
+bool k2 = true;
+bool k3 = true;
+bool k4 = true;
+bool k5 = true;
+bool k6 = true;
+
+bool anti_efekt = false;
+
+float k=0.009f;
+
+enum
+{
+    /* obiekty              */
+    SPHERE,               // kula
+    EXIT                  // wyjœcie
+};
+
+int obiekt = SPHERE;
+
+/* Funkcja ustawia parametry renderowania i oœwietlenie */
+void texturing() {
+	glEnable(GL_DEPTH_TEST);    /* W³¹czenie Z-Bufora */
+	glEnable(GL_TEXTURE_2D);    /* W³¹czenie teksturowania */
+    /* Wygenerowanie trzech tzw. "obiektów" dla tekstur */
+	glGenTextures(5, tex);
+    /* Aktywacja ka¿dej tekstury po kolei i ³adowanie z plików TGA */
+	glBindTexture(GL_TEXTURE_2D, tex[0]);
+	LoadTGATexture("trawa.tga");
+	glBindTexture(GL_TEXTURE_2D, tex[1]);
+	LoadTGATexture("wing.tga");
+	glBindTexture(GL_TEXTURE_2D, tex[2]);
+	LoadTGATexture("czarny.tga");
+	glBindTexture(GL_TEXTURE_2D, tex[3]);
+	LoadTGATexture("zolty.tga");
+	glBindTexture(GL_TEXTURE_2D, tex[4]);
+	LoadTGATexture("red.tga");
+}
+
+void initLight()
+{
+    //dodaj swiatlo otoczenia
+    GLfloat ambientColor[] = {0.8f, 0.4f, 0.3f, 1.0f};
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColor);
+
+    //dodaj ustawione swialo
+    GLfloat lightColor0[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    GLfloat lightPos0[] = {-3.0f, 2.0f, 0.0f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightColor0);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPos0);
+
+    //dod skierwoane swiatlo
+    GLfloat lightColor1[] = {0.0f, 1.0f, 0.0f, 1.0f};
+
+    GLfloat lightPos1[] = {-3.0f, 2.0f, 0.0f, 0.0f};
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, lightColor1);
+    glLightfv(GL_LIGHT1, GL_POSITION, lightPos1);
+}
+
+void Initialize()
+{
+    glEnable(GL_DEPTH_TEST);
+   // glClearColor(0.7f, 0.9f, 1.0f, 1.0f); //zmiana backgroundy na niebieski
+    if(EnableLight){
+        glEnable(GL_COLOR_MATERIAL); //wlaczaenie kolortyu
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        glEnable(GL_LIGHT1);
+        glEnable(GL_NORMALIZE);
+    }
+}
+
+void disablelight()
+{
+glDisable(GL_LIGHTING);
+glDisable(GL_LIGHT0);
+}
+
+void disabletext()
+{
+   glDisable(GL_TEXTURE_2D);
+}
+
+mucha()
+{
+    GLUquadricObj *obiekt;
+    obiekt = gluNewQuadric();
+
+   glPushMatrix(); //cala mucha
+   glBindTexture(GL_TEXTURE_2D, tex[2]);
+  glScalef(0.5,0.5,0.5);
+ //  glScalef(1,1,1);
+   glPushMatrix(); //nasza mucha tyl
+   //  glColor3f(0,0,0);
+     glScalef(1, 1, 1);
+     glScalef(2, 0.5, 1);
+      glTranslatef(0.3,0.3, 0);
+      gluSphere(obiekt, 0.2, 20, 10);
+ //  glutSolidSphere(0.2,20,10);
+ glPopMatrix();
+
+ glPushMatrix(); //nasza mucha tulow
+   //  glColor3f(0,0,0);
+   //  glScalef(1, 1, 1);
+     glScalef(1, 0.5, 0.7);
+      glTranslatef(1,0.3, 0);
+   gluSphere(obiekt,0.1,20,10);
+ glPopMatrix();
+  glPopMatrix();
+}
+
+skrzydla()
+{
+     GLUquadricObj *obiekt;
+    obiekt = gluNewQuadric();
+
+    glPushMatrix();
+    glScalef(0.5,0.5,0.5);
+    glPushMatrix(); //skrzydlo przednie
+    glBindTexture(GL_TEXTURE_2D, tex[1]);
+  //  glColor3f(1,1,1);
+      glTranslatef(0.6,0.2, 0.2);
+     glRotatef(90,1,0,0);
+     glRotatef(-35,0,0,1);
+     glScalef(2, 1, 0);
+   gluSphere(obiekt,0.2,20,10);
+ glPopMatrix();
+
+ glPushMatrix(); //skrzydlo przednie
+  //   glColor3f(1,1,1);
+  glBindTexture(GL_TEXTURE_2D, tex[1]);
+      glTranslatef(0.6,0.2, -0.2);
+     glRotatef(90,1,0,0);
+     glRotatef(35,0,0,1);
+     glScalef(2, 1, 0);
+   gluSphere(obiekt,0.2,20,10);
+ glPopMatrix();
+  glPopMatrix();
+}
+
+zoltakula()
+{
+    GLUquadricObj *obiekt;
+    obiekt = gluNewQuadric();
+
+      glPushMatrix();
+      glBindTexture(GL_TEXTURE_2D, tex[3]);
+    glTranslatef(-3, 2, 0);
+  //  glColor3f(1,1,0);
+    gluSphere(obiekt,0.1,20,10);  //nasza zolta kula
+    glPopMatrix();
+}
+
+trawa()
+{
+    glPushMatrix();
+    glBindTexture(GL_TEXTURE_2D, tex[0]);
+    glTranslatef(0, -2, 0);
+  glRotatef(90,1,0,0);
+    glBegin(GL_QUADS);  //plansza
+   // glColor3f(0,1,0);
+      glTexCoord2f(0, 0);glVertex3f( 5,  -5, 0.0f); //prawy g wierzcholek //prawy dol
+  //    glColor3f(0,0,0);
+     glTexCoord2f(1, 0); glVertex3f( -5,  -5, 0.0f);//prawy d //prawa gora
+   //   glColor3f(0,1,0);
+      glTexCoord2f(1, 1);glVertex3f(-5, 5, 0.0f); //lewy d   //lewa gora
+   //   glColor3f(0,1,0);
+     glTexCoord2f(0, 1); glVertex3f( 5, 5.0,0.0f);  //lewy g   //lewy dol
+glEnd();
+    glPopMatrix();
+}
+
+/* obliczenie wspó³rzêdnych wierzcho³ków
+   Beziera na podstawie wierzcho³ków
+   B-spline (algorytm Boehma) */
+void Boehm() {
+    short i;
+     for (i=0; i<=2; i++) {
+                glVertex3f (B[i][0], B[i][1], B[i][2]);
+     }
+      for (i=0; i<=2; i++) {
+                glVertex3f (C[i][0], C[i][1], C[i][2]);
+     }
+     for (i=0; i<=2; i++) {
+                glVertex3f (D[i][0], D[i][1], D[i][2]);
+     }
+     for (i=0; i<=2; i++) {
+                glVertex3f (E[i][0], E[i][1], F[i][2]);
+     }
+     for (i=0; i<=2; i++) {
+                glVertex3f (F[i][0], F[i][1], F[i][2]);
+     }
+     for (i=0; i<=2; i++) {
+                glVertex3f (G[i][0], G[i][1], G[i][2]);
+     }
+}
+
+/* rysowanie pierwszej krzywej Beziera */
+void Krzywa1() {
+
+   glMap1f (GL_MAP1_VERTEX_3,0.0f, 1.0f, 3, 3, &B[0][0]);
+   // w³¹czenie funkcji obliczaj¹cej
+   glEnable (GL_MAP1_VERTEX_3);
+   // obliczenie siatki 15 punktów
+   // w zakresie parametru u <0; 1>
+   glMapGrid1f (15, 0.0f, 1.0f);
+   // ustawienie koloru linii (czerwony)
+//   glColor3f (1.0f, 0.0f, 0.0f);
+glBindTexture(GL_TEXTURE_2D, tex[4]);
+   // ustawienie gruboœci linii (3 piksele)
+   glLineWidth (3.0f);
+   // rysowanie pierwszej krzywej Beziera
+   // po³¹czenie ³aman¹ punktów 0-15
+   glEvalMesh1 (GL_LINE, 0, 15);
+}
+
+void Krzywa2() {
+
+   glMap1f (GL_MAP1_VERTEX_3,0.0f, 1.0f, 3, 3, &C[0][0]);
+   // w³¹czenie funkcji obliczaj¹cej
+   glEnable (GL_MAP1_VERTEX_3);
+   // obliczenie siatki 15 punktów
+   // w zakresie parametru u <0; 1>
+   glMapGrid1f (15, 0.0f, 1.0f);
+   // ustawienie koloru linii (czerwony)
+//   glColor3f (1.0f, 0.0f, 0.0f);
+glBindTexture(GL_TEXTURE_2D, tex[4]);
+   // ustawienie gruboœci linii (3 piksele)
+   glLineWidth (3.0f);
+   // rysowanie pierwszej krzywej Beziera
+   // po³¹czenie ³aman¹ punktów 0-15
+   glEvalMesh1 (GL_LINE, 0, 15);
+}
+
+void Krzywa3() {
+
+   glMap1f (GL_MAP1_VERTEX_3,0.0f, 1.0f, 3, 3, &D[0][0]);
+   // w³¹czenie funkcji obliczaj¹cej
+   glEnable (GL_MAP1_VERTEX_3);
+   // obliczenie siatki 15 punktów
+   // w zakresie parametru u <0; 1>
+   glMapGrid1f (15, 0.0f, 1.0f);
+   // ustawienie koloru linii (czerwony)
+//   glColor3f (1.0f, 0.0f, 0.0f);
+glBindTexture(GL_TEXTURE_2D, tex[4]);
+   // ustawienie gruboœci linii (3 piksele)
+   glLineWidth (3.0f);
+   // rysowanie pierwszej krzywej Beziera
+   // po³¹czenie ³aman¹ punktów 0-15
+   glEvalMesh1 (GL_LINE, 0, 15);
+}
+
+void Krzywa4() {
+
+   glMap1f (GL_MAP1_VERTEX_3,0.0f, 1.0f, 3, 3, &E[0][0]);
+   // w³¹czenie funkcji obliczaj¹cej
+   glEnable (GL_MAP1_VERTEX_3);
+   // obliczenie siatki 15 punktów
+   // w zakresie parametru u <0; 1>
+   glMapGrid1f (15, 0.0f, 1.0f);
+   // ustawienie koloru linii (czerwony)
+//   glColor3f (1.0f, 0.0f, 0.0f);
+glBindTexture(GL_TEXTURE_2D, tex[4]);
+   // ustawienie gruboœci linii (3 piksele)
+   glLineWidth (3.0f);
+   // rysowanie pierwszej krzywej Beziera
+   // po³¹czenie ³aman¹ punktów 0-15
+   glEvalMesh1 (GL_LINE, 0, 15);
+}
+
+void Krzywa5() {
+
+   glMap1f (GL_MAP1_VERTEX_3,0.0f, 1.0f, 3, 3, &F[0][0]);
+   // w³¹czenie funkcji obliczaj¹cej
+   glEnable (GL_MAP1_VERTEX_3);
+   // obliczenie siatki 15 punktów
+   // w zakresie parametru u <0; 1>
+   glMapGrid1f (15, 0.0f, 1.0f);
+   // ustawienie koloru linii (czerwony)
+//   glColor3f (1.0f, 0.0f, 0.0f);
+glBindTexture(GL_TEXTURE_2D, tex[4]);
+   // ustawienie gruboœci linii (3 piksele)
+   glLineWidth (3.0f);
+   // rysowanie pierwszej krzywej Beziera
+   // po³¹czenie ³aman¹ punktów 0-15
+   glEvalMesh1 (GL_LINE, 0, 15);
+}
+
+void Krzywa6() {
+
+   glMap1f (GL_MAP1_VERTEX_3,0.0f, 1.0f, 3, 3, &G[0][0]);
+   // w³¹czenie funkcji obliczaj¹cej
+   glEnable (GL_MAP1_VERTEX_3);
+   // obliczenie siatki 15 punktów
+   // w zakresie parametru u <0; 1>
+   glMapGrid1f (15, 0.0f, 1.0f);
+   // ustawienie koloru linii (czerwony)
+//   glColor3f (1.0f, 0.0f, 0.0f);
+glBindTexture(GL_TEXTURE_2D, tex[4]);
+   // ustawienie gruboœci linii (3 piksele)
+   glLineWidth (3.0f);
+   // rysowanie pierwszej krzywej Beziera
+   // po³¹czenie ³aman¹ punktów 0-15
+   glEvalMesh1 (GL_LINE, 0, 15);
+}
+
+
+void DisplayLists()
+{
+    glEnable(GL_TEXTURE_2D);
+    texturing();
+    // okreœlenie zarodka dla  ci¹gu liczb pseudolosowych
+    srand( time( NULL ) );
+    // wygenerowanie identyfikatorów trzech list wyœwietlania
+    listid = glGenLists( 4 );
+
+    glNewList( listid + 0, GL_COMPILE );
+    mucha();
+    glEndList();
+
+    glNewList( listid + 1, GL_COMPILE );
+    skrzydla();
+    glEndList();
+
+    glNewList( listid + 2, GL_COMPILE );
+    zoltakula();
+    glEndList();
+
+    glNewList( listid + 3, GL_COMPILE );
+    trawa();
+    glEndList();
+}
+
+void display() {
+ glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   if(kolo==1)  glClearColor(0.5, 0.5, 1, 1.0); //niebieski
+   if(kolo==0)  glClearColor(0, 0, 0, 1.0); //czarny
+  //  glColorMaterial (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+glPushMatrix();
+    glEnable (GL_DEPTH_TEST);
+    glMatrixMode (GL_MODELVIEW);
+
+  //  glRotatef(zRotated,0.0,0.0,1.0);
+    gluLookAt(cameraPos[0], cameraPos[1], cameraPos[2], 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    if(EnableLight) initLight();
+   //  glPointSize(3);
+    glTranslatef(0, -5, 0);
+    glScalef(3, 3, 3);
+    glRotatef(zRotated,0,1,0);
+  // glScalef(0.05, 0.05, 0.05);
+
+  if (anti_efekt==false){
+      //   Figury();
+       glCallList( listid + 0 ); //mucha
+      glCallList( listid + 1 ); //skrzydla
+      glCallList( listid + 2 ); //zoltakula
+      glCallList( listid + 3 ); //trawa
+
+   if (k1==true) Krzywa1();
+   if (k2==true) Krzywa2();
+   if (k3==true) Krzywa3();
+   if (k4==true) Krzywa4();
+   if (k5==true) Krzywa5();
+   if (k6==true) Krzywa6();
+  }
+
+   if (anti_efekt==true){
+      // przesuniêcie w lewo
+      glTranslatef (-k, 0.0f, 0.0f);
+      //   Figury();
+       glCallList( listid + 0 ); //mucha
+      glCallList( listid + 1 ); //skrzydla
+      glCallList( listid + 2 ); //zoltakula
+      glCallList( listid + 3 ); //trawa nie dziala teksturowanie???
+
+   if (k1==true) Krzywa1();
+   if (k2==true) Krzywa2();
+   if (k3==true) Krzywa3();
+   if (k4==true) Krzywa4();
+   if (k5==true) Krzywa5();
+   if (k6==true) Krzywa6();
+         glAccum (GL_LOAD, 0.1f);
+
+      // przesuniêcie w prawo
+      glTranslatef (2*k, 0.0f, 0.0f);
+      //   Figury();
+       glCallList( listid + 0 ); //mucha
+      glCallList( listid + 1 ); //skrzydla
+      glCallList( listid + 2 ); //zoltakula
+      glCallList( listid + 3 ); //trawa nie dziala teksturowanie???
+
+   if (k1==true) Krzywa1();
+   if (k2==true) Krzywa2();
+   if (k3==true) Krzywa3();
+   if (k4==true) Krzywa4();
+   if (k5==true) Krzywa5();
+   if (k6==true) Krzywa6();
+         glAccum (GL_ACCUM, 0.2f);
+
+      // przesuniêcie w górê
+      glTranslatef (-k, k, 0.0f);
+      //   Figury();
+       glCallList( listid + 0 ); //mucha
+      glCallList( listid + 1 ); //skrzydla
+      glCallList( listid + 2 ); //zoltakula
+      glCallList( listid + 3 ); //trawa nie dziala teksturowanie???
+
+   if (k1==true) Krzywa1();
+   if (k2==true) Krzywa2();
+   if (k3==true) Krzywa3();
+   if (k4==true) Krzywa4();
+   if (k5==true) Krzywa5();
+   if (k6==true) Krzywa6();
+         glAccum (GL_ACCUM, 0.3f);
+
+      // przesuniêcie w dó³
+      glTranslatef (0.0f, -2*k, 0.0f);
+     //    Figury();
+      glCallList( listid + 0 ); //mucha
+      glCallList( listid + 1 ); //skrzydla
+      glCallList( listid + 2 ); //zoltakula
+      glCallList( listid + 3 ); //trawa nie dziala teksturowanie???
+
+   if (k1==true) Krzywa1();
+   if (k2==true) Krzywa2();
+   if (k3==true) Krzywa3();
+   if (k4==true) Krzywa4();
+   if (k5==true) Krzywa5();
+   if (k6==true) Krzywa6();
+         glAccum (GL_ACCUM, 0.4f);
+
+      // wyœwietlenie zawartoœci bufora
+      glAccum (GL_RETURN, 1.0f);
+   }
+glPopMatrix();
+
+    glFlush();
+
+    glutSwapBuffers();
+
+ glutPostRedisplay();
+}
+
+void reshape(int w, int h) {
+    glViewport(0, 0, (GLsizei) w, (GLsizei) h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    gluPerspective(45.0, (GLfloat)w / (GLfloat)h, 1.5, 50.0);
+
+    glMatrixMode(GL_MODELVIEW);
+    display();
+}
+
+void keyboard(unsigned char key, int x, int y){
+    switch(key){
+        case 27 :
+        case 'q':
+            exit(0);
+            break;
+   reshape (glutGet (GLUT_WINDOW_WIDTH),glutGet (GLUT_WINDOW_HEIGHT));
+    }
+}
+
+void idle()
+{
+    // zmiana k1ta obrotu wzgledem osi X i Y
+    zRotated += 1;
+    //i+=66;
+
+}
+
+void idlem()
+{
+    // zmiana k1ta obrotu wzgledem osi X i Y
+    zRotated += 0.0;
+  //  i+=0;
+}
+
+void reset()
+{
+    // zmiana k1ta obrotu wzgledem osi X i Y
+   zRotated = 0.0;
+  //  i=0;
+}
+
+
+void menu(int value) {
+    switch(value) {
+        case 0:
+            exit(0);
+            break;
+        case 1:
+            glutIdleFunc(idle);
+            break;
+        case 2:
+            glutIdleFunc(idlem);
+            break;
+        case 3:
+            glutIdleFunc(idlem);
+           glutIdleFunc(reset);
+            break;
+        case 4:
+             Initialize();
+            break;
+        case 5:
+            disablelight();
+            break;
+        case 6:
+            texturing();
+            break;
+        case 7:
+            disabletext();
+            break;
+        case 8:
+            k1 = true;
+            k2 = true;
+            k3 = true;
+            k4 = true;
+            k5 = true;
+            k6 = true;
+            break;
+        case 9:
+            k1 = false;
+            k2 = false;
+            k3 = false;
+            k4 = false;
+            k5 = false;
+            k6 = false;
+            break;
+        case 10:
+            kolo=1;
+            break;
+        case 11:
+            kolo=0;
+            break;
+        case 12:
+            //srodkowe wygiecie
+            B[0][0]=0;
+            B[0][1]=0;
+            B[0][2]=0;
+
+            B[1][0]=((rand()%2)-1); //2,1
+            B[1][1]=((rand()%2)-1); //2,2
+            B[1][2]=((rand()%2)-1); //2,3
+            //ostatni
+            B[2][0]=((rand()%10)-5); //3,1
+            B[2][1]=(rand()%2); //3,2
+            B[2][2]=((rand()%10)-5); //3,3
+            if (B[1][0]==0) B[1][0]=1;
+            if (B[1][1]==0) B[1][1]=1;
+            if (B[1][2]==0) B[1][2]=1;
+
+            C[0][0]=B[2][0];
+            C[0][1]=B[2][1];
+            C[0][2]=B[2][2];
+            //
+            C[1][0]=((rand()%2)-1); //2,1
+            C[1][1]=((rand()%2)-1); //2,2
+            C[1][2]=((rand()%2)-1); //2,3
+            //ostatni
+            if (C[1][0]==0) C[1][0]=1;
+            if (C[1][1]==0) C[1][1]=1;
+            if (C[1][2]==0) C[1][2]=1;
+
+            C[2][0]=((rand()%6)-3); //3,1
+            C[2][1]=(rand()%6); //3,2
+            C[2][2]=((rand()%6)-3); //3,3
+
+            D[0][0]=C[2][0];
+            D[0][1]=C[2][1];
+            D[0][2]=C[2][2];
+
+            D[1][0]=((rand()%10)-5); //2,1
+            D[1][1]=((rand()%4)-2); //2,2
+            D[1][2]=((rand()%10)-5); //2,3
+            //ostatni
+            if (D[1][0]==0) D[1][0]=1;
+            if (D[1][1]==0) D[1][1]=1;
+            if (D[1][2]==0) D[1][2]=1;
+
+            D[2][0]=((rand()%4)-2); //3,1
+            D[2][1]=(rand()%2); //3,2
+            D[2][2]=((rand()%4)-2); //3,3
+
+            E[0][0]=D[2][0];
+            E[0][1]=D[2][1];
+            E[0][2]=D[2][2];
+
+            E[1][0]=((rand()%10)-5); //2,1
+            E[1][1]=((rand()%4)-2); //2,2
+            E[1][2]=((rand()%10)-5); //2,3
+            //ostatni
+            if (E[1][0]==0) E[1][0]=1;
+            if (E[1][1]==0) E[1][1]=1;
+            if (E[1][2]==0) E[1][2]=1;
+
+            E[2][0]=((rand()%4)-2); //3,1
+            E[2][1]=(rand()%2); //3,2
+            E[2][2]=((rand()%4)-2); //3,3
+
+            F[0][0]=E[2][0];
+            F[0][1]=E[2][1];
+            F[0][2]=E[2][2];
+
+            F[1][0]=((rand()%2)-1); //2,1
+            F[1][1]=((rand()%2)-1); //2,2
+            F[1][2]=((rand()%2)-1); //2,3
+            //ostatni
+            if (F[1][0]==0) F[1][0]=1;
+            if (F[1][1]==0) F[1][1]=1;
+            if (F[1][2]==0) F[1][2]=1;
+
+            F[2][0]=((rand()%4)-2); //3,1
+            F[2][1]=(rand()%2); //3,2
+            F[2][2]=((rand()%4)-2); //3,3
+
+            G[0][0]=F[2][0];
+            G[0][1]=F[2][1];
+            G[0][2]=F[2][2];
+
+            G[1][0]=((rand()%2)-1); //2,1
+            G[1][1]=((rand()%2)-1); //2,2
+            G[1][2]=((rand()%2)-1); //2,3
+            //ostatni
+            if (G[1][0]==0) G[1][0]=1;
+            if (G[1][1]==0) G[1][1]=1;
+            if (G[1][2]==0) G[1][2]=1;
+
+            G[2][0]=B[0][0];
+            G[2][1]=B[0][1]; //3,2
+            G[2][2]=B[0][2];//3,3
+            break;
+        case 13:
+            anti_efekt=true;
+            break;
+        case 14:
+            anti_efekt=false;
+            break;
+
+    }
+    reshape (glutGet (GLUT_WINDOW_WIDTH),glutGet (GLUT_WINDOW_HEIGHT));
+}
+
+int main(int argc, char *argv[]) {
+    srand(time(NULL));
+
+    Boehm();
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(screenWidth, screenHeight);
+    glutInitWindowPosition(5,5);
+    glutCreateWindow(argv[0]);
+
+    glMatrixMode(GL_PROJECTION);
+     glMatrixMode(GL_MODELVIEW);
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutKeyboardFunc(keyboard);
+    glutCreateMenu(menu);
+
+    int menuAnim = glutCreateMenu(menu);
+     glutAddMenuEntry("Wlacz obrot nieskonczony o os X", 1);
+     glutAddMenuEntry("Zatrzymaj obrot", 2);
+     glutAddMenuEntry("Reset obrotu i powrot to pozycji startowej", 3);
+
+    int menuSwi = glutCreateMenu(menu);
+    glutAddMenuEntry("Wlacz Oswietlenie", 4);
+    glutAddMenuEntry("Wylacz Oswietlenie", 5);
+
+     int menuText = glutCreateMenu(menu);
+    glutAddMenuEntry("Wlacz Teksturowanie", 6);
+    glutAddMenuEntry("Wylacz Teksturowanie", 7);
+
+    int menuKrzywa = glutCreateMenu(menu);
+    glutAddMenuEntry("Wlacz wyswietlenie Krzywej", 8);
+    glutAddMenuEntry("Wylacz wyswietlenie Krzywej", 9);
+     glutAddMenuEntry("Losuj Krzywa", 12);
+
+
+    int menuTlo = glutCreateMenu(menu);
+    glutAddMenuEntry("Blekitne", 10);
+    glutAddMenuEntry("Czarne", 11);
+
+    int menuAnti = glutCreateMenu(menu);
+    glutAddMenuEntry("Wlacz", 13);
+    glutAddMenuEntry("Wylacz", 14);
+
+    glutCreateMenu(menu);
+    glutAddSubMenu("Animacje", menuAnim);
+    glutAddSubMenu("Swiatlo", menuSwi);
+    glutAddSubMenu("Tekstury", menuText);
+    glutAddSubMenu("Krzywa", menuKrzywa);
+    glutAddSubMenu("Tlo", menuTlo);
+    glutAddSubMenu("Wygladzanie krawedzi", menuAnti);
+    glutAddMenuEntry("Opusc", 0);
+
+    glutAttachMenu (GLUT_RIGHT_BUTTON);
+    xRotated = yRotated = zRotated = 0.0;
+
+    DisplayLists();
+
+    glutMainLoop();
+
+    return 0;
+}
